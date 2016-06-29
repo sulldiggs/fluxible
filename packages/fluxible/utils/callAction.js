@@ -14,7 +14,12 @@ require('setimmediate');
  * otherwise, Promise invocation.
  */
 function callAction (actionContext, action, payload, done) {
-    var executeActionPromise = new Promise(function (resolve, reject) {
+    var renameFunction = function (name, fn) {
+        return (new Function("return function (call) { return function " + name +
+            " () { return call(this, arguments) }; };")())(Function.apply.bind(fn));
+    };
+
+    var executeActionPromise = new Promise(renameFunction(action.name, function (resolve, reject) {
         setImmediate(function () {
             try {
                 var syncResult = action(actionContext, payload, function (err, result) {
@@ -33,7 +38,7 @@ function callAction (actionContext, action, payload, done) {
                 reject(e);
             }
         });
-    });
+    }));
 
     if (done) {
         executeActionPromise
